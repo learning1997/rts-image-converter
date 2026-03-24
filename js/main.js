@@ -98,7 +98,7 @@ async function downloadAll(){
   const keys=Object.keys(convBlobs);if(!keys.length)return;
   if(keys.length===1){dlBlob(convBlobs[keys[0]],keys[0]);return;}
   const zip=new JSZip();keys.forEach(k=>zip.file(k,convBlobs[k]));
-  dlBlob(await zip.generateAsync({type:'blob'}),'pixl-converted.zip');
+  dlBlob(await zip.generateAsync({type:'blob'}),'rts-converted.zip');
   toast('ZIP downloaded!','↓');
 }
 
@@ -414,7 +414,7 @@ async function dlFromUpload(asZip){
 
   note.style.display='none';
   if(asZip){
-    dlBlob(await zip.generateAsync({type:'blob'}),'pixl-placeholders.zip');
+    dlBlob(await zip.generateAsync({type:'blob'}),'rts-placeholders.zip');
     toast(`${phFiles.length} placeholders downloaded!`,'✓');
   } else {
     toast('Downloaded!','↓');
