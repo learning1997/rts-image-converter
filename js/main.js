@@ -1,3 +1,22 @@
+// ── Theme
+const themeToggle = document.getElementById('theme-toggle');
+const currentTheme = localStorage.getItem('theme') || 'dark';
+
+if (currentTheme === 'light') {
+  document.documentElement.setAttribute('data-theme', 'light');
+}
+
+themeToggle.addEventListener('click', () => {
+  let theme = document.documentElement.getAttribute('data-theme');
+  if (theme === 'light') {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('theme', 'light');
+  }
+});
+
 // ── Tabs
 function switchTab(id,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -255,18 +274,39 @@ function setAlign(el,align){
   el.classList.add('on');
   renderPH();
 }
-function loadGFont(){
+// ── Font loading
+async function loadGFont(){
   const font=document.getElementById('ph-font').value;
-  if(!loadedFonts.has(font)){
-    const link=document.createElement('link');
-    link.rel='stylesheet';
-    link.href=`https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}&display=swap`;
-    document.head.appendChild(link);
-    loadedFonts.add(font);
-    document.fonts.load(`20px "${font}"`).then(()=>renderPH());
+  
+  if(font === 'Syne' || font === 'DM Mono'){
+    renderPH();
     return;
   }
+  
+  // If not already in the head, add it
+  if (!document.querySelector(`link[href*="${font.replace(/ /g,'+')}"]`)) {
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href=`https://fonts.googleapis.com/css2?family=${font.replace(/ /g,'+')}:wght@400;500;600;700&display=swap`;
+    document.head.appendChild(link);
+  }
+  
+  try {
+    // Wait for the font to be ready for use in canvas
+    // We try to load both 400 and 600 to be safe
+    await Promise.all([
+      document.fonts.load(`400 24px "${font}"`),
+      document.fonts.load(`600 24px "${font}"`)
+    ]);
+    await document.fonts.ready;
+  } catch(e) {
+    console.warn("Font loading error:", e);
+  }
+  
+  // Redraw immediately AND after a short delay to catch the layout engine shift
   renderPH();
+  setTimeout(renderPH, 150);
+  setTimeout(renderPH, 500);
 }
 
 // ── Render preview
@@ -286,6 +326,17 @@ async function renderPH(){
   canvas.width=w; canvas.height=h;
   drawPH(canvas,w,h);
   document.getElementById('dim-badge').textContent=`${w} × ${h}`;
+  
+  // Extra safeguard: if a font was just loaded, ensure it renders correctly
+  const fnt = document.getElementById('ph-font').value;
+  if (fnt !== 'Syne' && fnt !== 'DM Mono') {
+     document.fonts.load(`600 24px "${fnt}"`).then(() => {
+        // Only draw again if needed to avoid infinite loops, 
+        // but since drawPH is synchronous and this is a then(), 
+        // we just call it once more to refresh.
+        drawPH(canvas,w,h);
+     });
+  }
 }
 
 function getSettings(){
@@ -334,7 +385,8 @@ function drawPH(canvas,w,h,s){
   if(txt){
     ctx.save();
     const safFs=Math.min(fs,w/3,h/3);
-    ctx.font=`600 ${safFs}px "${fnt}",sans-serif`;
+    // Explicitly using the font family and a fallback
+    ctx.font=`600 ${safFs}px "${fnt}", sans-serif`;
     ctx.textAlign='center';ctx.textBaseline='middle';
     let ty=h/2;
     if(phAlign==='top')   ty=safFs*1.8;
@@ -452,3 +504,8 @@ setMode('custom');
   document.getElementById(id).addEventListener('input',renderPH);
 });
 document.getElementById('ph-dim').addEventListener('change',renderPH);
+
+// Ensure fonts are ready before initial render
+document.fonts.ready.then(() => {
+  renderPH();
+});
