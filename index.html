@@ -95,7 +95,7 @@
       <!-- Mode Toggle -->
       <div class="card" style="margin-bottom:16px;">
         <div class="sec-label"><span class="sec-dot"></span> Mode</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="mode-grid">
           <button class="mode-btn active" id="mode-custom-btn" onclick="setMode('custom')">
             <span style="font-size:1.3rem;display:block;margin-bottom:5px;">✏️</span>
             <span style="font-weight:700;font-size:.88rem;">Custom Size</span>
@@ -117,7 +117,7 @@
       <div id="mode-custom-section">
         <div class="card">
           <div class="sec-label"><span class="sec-dot"></span> Canvas Size</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="grid-2col">
             <div class="fld">
               <label class="fld-label">Width (px)</label>
               <input type="number" class="fld-input" id="ph-w" value="800" min="1" oninput="renderPH()">
@@ -224,7 +224,7 @@
               <label class="fld-label">Overlay Text</label>
               <input type="text" class="fld-input" id="ph-text" value="Reacthemes" oninput="renderPH()">
             </div>
-            <div style="display:grid;grid-template-columns:1fr 80px;gap:10px;">
+            <div class="font-grid">
               <div class="fld">
                 <label class="fld-label">Google Font</label>
                 <select class="fld-input" id="ph-font" onchange="loadGFont()">

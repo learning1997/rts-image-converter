@@ -51,10 +51,16 @@ function renderConvList(){
   convFiles.forEach((f,i)=>{
     const div=document.createElement('div');
     div.className='file-item';div.id='fi-'+i;
-    div.innerHTML=`<img class="file-thumb" id="fth-${i}" src=""><span class="file-name">${f.name}</span><span class="file-size">${(f.size/1024).toFixed(0)} KB</span><span class="file-status st-q" id="fst-${i}">Queued</span>`;
+    div.innerHTML=`<img class="file-thumb" id="fth-${i}" src=""><span class="file-name">${f.name}</span><span class="file-size">${(f.size/1024).toFixed(0)} KB</span><span class="file-status st-q" id="fst-${i}">Queued</span><button class="rm-btn" onclick="removeConvFile(${i})" title="Remove">✕</button>`;
     list.appendChild(div);
     document.getElementById('fth-'+i).src=URL.createObjectURL(f);
   });
+}
+
+function removeConvFile(i){
+  convFiles.splice(i, 1);
+  if(!convFiles.length) clearConv();
+  else renderConvList();
 }
 
 async function startConvert(){
@@ -66,6 +72,7 @@ async function startConvert(){
   btn.disabled=true;btn.textContent='⚡ Converting…';
   const pw=document.getElementById('conv-pw');const pf=document.getElementById('conv-pf');
   pw.style.display='block';pf.style.width='0%';
+  document.querySelectorAll('.rm-btn').forEach(b=>b.style.display='none');
   convBlobs={};
   let done=0;const total=convFiles.length*selFmts.size;
   for(let i=0;i<convFiles.length;i++){
