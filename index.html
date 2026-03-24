@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RTS — Image Toolkit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+  <div class="app">
+
+    <header>
+      <div class="logo-mark">R</div>
+      <div>
+        <div class="logo-text">RT<span>S</span></div>
+        <div class="logo-sub">Image Toolkit — Convert & Placeholder</div>
+      </div>
+      <div class="header-pill">100% Client-Side · No Upload</div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('converter',this)"><span>⇄</span> Image Converter</button>
+      <button class="tab" onclick="switchTab('placeholder',this)"><span>▣</span> Placeholder Generator</button>
+    </div>
+
+    <!-- ═══════ CONVERTER ═══════ -->
+    <div id="panel-converter" class="panel active">
+
+      <div class="card">
+        <div class="sec-label"><span class="sec-dot"></span> Upload Images</div>
+        <div class="dropzone" id="conv-drop">
+          <input type="file" id="conv-input" multiple accept="image/*">
+          <span class="drop-icon">🗂</span>
+          <div class="drop-title">Drop images here or click to browse</div>
+          <div class="drop-hint">JPG · PNG · WEBP · GIF · BMP · TIFF · SVG — Multiple files OK</div>
+        </div>
+        <div id="conv-list" class="file-list"></div>
+        <div class="prog-wrap" id="conv-pw">
+          <div class="prog-fill" id="conv-pf"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-label"><span class="sec-dot"></span> Output Format <span class="pill-badge"
+            style="margin-left:6px">Multi-select</span></div>
+        <div class="fmt-row" id="fmt-row">
+          <button class="fmt-chip on" data-fmt="webp">WEBP</button>
+          <button class="fmt-chip" data-fmt="jpeg">JPEG</button>
+          <button class="fmt-chip" data-fmt="png">PNG</button>
+          <button class="fmt-chip" data-fmt="gif">GIF</button>
+          <button class="fmt-chip" data-fmt="bmp">BMP</button>
+          <button class="fmt-chip" data-fmt="ico">ICO</button>
+        </div>
+        <p class="note">Select <b>multiple formats</b> to export one image into all at once.</p>
+        <hr class="divider">
+        <div class="sl-row">
+          <span class="sl-label">Quality</span>
+          <input type="range" id="sl-q" min="10" max="100" value="90"
+            oninput="document.getElementById('v-q').textContent=this.value+'%'">
+          <span class="sl-val" id="v-q">90%</span>
+        </div>
+        <div class="sl-row">
+          <span class="sl-label">Max Width</span>
+          <input type="range" id="sl-w" min="0" max="4000" step="50" value="0"
+            oninput="document.getElementById('v-w').textContent=this.value==0?'Original':this.value+'px'">
+          <span class="sl-val" id="v-w">Original</span>
+        </div>
+        <div class="sl-row">
+          <span class="sl-label">Max Height</span>
+          <input type="range" id="sl-h" min="0" max="4000" step="50" value="0"
+            oninput="document.getElementById('v-h').textContent=this.value==0?'Original':this.value+'px'">
+          <span class="sl-val" id="v-h">Original</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-a" id="conv-btn" onclick="startConvert()" disabled>⚡ Convert All</button>
+        <button class="btn btn-p" id="conv-dl-zip-btn" onclick="downloadAll()" style="display:none">↓ Download
+          ZIP</button>
+        <button class="btn btn-g" onclick="clearConv()">✕ Clear</button>
+      </div>
+      <p class="note" style="margin-top:11px">🔒 Everything runs in your browser — files never leave your device.</p>
+    </div>
+
+    <!-- ═══════ PLACEHOLDER ═══════ -->
+    <div id="panel-placeholder" class="panel">
+
+      <!-- Mode Toggle -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="sec-label"><span class="sec-dot"></span> Mode</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button class="mode-btn active" id="mode-custom-btn" onclick="setMode('custom')">
+            <span style="font-size:1.3rem;display:block;margin-bottom:5px;">✏️</span>
+            <span style="font-weight:700;font-size:.88rem;">Custom Size</span>
+            <span
+              style="display:block;font-family:'DM Mono',monospace;font-size:.68rem;color:var(--text2);margin-top:3px;">Set
+              width &amp; height manually</span>
+          </button>
+          <button class="mode-btn" id="mode-upload-btn" onclick="setMode('upload')">
+            <span style="font-size:1.3rem;display:block;margin-bottom:5px;">📁</span>
+            <span style="font-weight:700;font-size:.88rem;">From Images / Folder</span>
+            <span
+              style="display:block;font-family:'DM Mono',monospace;font-size:.68rem;color:var(--text2);margin-top:3px;">Use
+              original image dimensions</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom size inputs (shown in custom mode) -->
+      <div id="mode-custom-section">
+        <div class="card">
+          <div class="sec-label"><span class="sec-dot"></span> Canvas Size</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="fld">
+              <label class="fld-label">Width (px)</label>
+              <input type="number" class="fld-input" id="ph-w" value="800" min="1" oninput="renderPH()">
+            </div>
+            <div class="fld">
+              <label class="fld-label">Height (px)</label>
+              <input type="number" class="fld-input" id="ph-h" value="600" min="1" oninput="renderPH()">
+            </div>
+          </div>
+          <!-- Quick size presets -->
+          <div style="margin-top:10px;">
+            <div class="fld-label" style="margin-bottom:7px;">Quick Presets</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <button class="size-preset" onclick="setSize(1920,1080)">1920×1080</button>
+              <button class="size-preset" onclick="setSize(1280,720)">1280×720</button>
+              <button class="size-preset" onclick="setSize(800,600)">800×600</button>
+              <button class="size-preset" onclick="setSize(400,300)">400×300</button>
+              <button class="size-preset" onclick="setSize(1200,630)">OG Image</button>
+              <button class="size-preset" onclick="setSize(1080,1080)">1:1 Square</button>
+              <button class="size-preset" onclick="setSize(1080,1920)">9:16 Story</button>
+              <button class="size-preset" onclick="setSize(600,400)">Thumbnail</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload section (shown in upload mode) -->
+      <div id="mode-upload-section" style="display:none;">
+        <div class="card">
+          <div class="sec-label"><span class="sec-dot"></span> Source Images <span class="pill-badge"
+              style="margin-left:6px">Folder Supported</span></div>
+          <div class="upload-2col">
+            <div class="dropzone" style="padding:26px 16px;" id="ph-file-drop">
+              <input type="file" id="ph-file-input" multiple
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/bmp,image/tiff,image/svg+xml,image/avif,image/heic,image/heif">
+              <span class="drop-icon" style="font-size:1.7rem">🖼</span>
+              <div class="drop-title" style="font-size:.88rem;">Select Images</div>
+              <div class="drop-hint">Individual files</div>
+            </div>
+            <div class="dropzone" style="padding:26px 16px;" id="ph-folder-drop">
+              <input type="file" id="ph-folder-input" multiple webkitdirectory>
+              <span class="drop-icon" style="font-size:1.7rem">📁</span>
+              <div class="drop-title" style="font-size:.88rem;">Select Folder</div>
+              <div class="drop-hint">All images <b>+ sub-folders</b></div>
+            </div>
+          </div>
+          <div id="ph-badge" class="count-badge" style="display:none">
+            <span class="count-dot"></span>
+            <span id="ph-cnt">0 images loaded</span>
+            <button onclick="clearPh()"
+              style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.85rem;margin-left:4px;">✕</button>
+          </div>
+          <div id="ph-src-grid" class="src-grid"></div>
+        </div>
+      </div>
+
+      <div class="ph-layout">
+
+        <!-- Controls -->
+        <div>
+          <!-- Size card placeholder for upload mode -->
+          <div id="upload-size-note" class="card" style="display:none;">
+            <div class="sec-label"><span class="sec-dot"></span> Canvas Size</div>
+            <p class="note" style="margin-top:0;">Each image's <b>original dimensions</b> will be used
+              automatically.<br>Preview below uses the first uploaded image's size.</p>
+          </div>
+
+          <div class="card">
+            <div class="sec-label"><span class="sec-dot"></span> Colors & Preset</div>
+            <div class="fld">
+              <label class="fld-label">Style Preset</label>
+              <select class="fld-input" id="ph-preset" onchange="applyPreset()">
+                <option value="classic">Classic — Off-white / Grey</option>
+                <option value="dark">Dark — Charcoal / Slate</option>
+                <option value="blue">Blueprint — Navy / Cyan</option>
+                <option value="warm">Warm — Cream / Sienna</option>
+                <option value="green">Matrix — Dark / Green</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            <div class="fld">
+              <label class="fld-label">Background</label>
+              <div class="color-row">
+                <div class="color-swatch"><input type="color" id="ph-bg" value="#ebebeb"
+                    oninput="syncHex('ph-bg','ph-bg-hex');renderPH()"></div>
+                <input type="text" class="fld-input" id="ph-bg-hex" value="#ebebeb"
+                  oninput="syncPicker('ph-bg','ph-bg-hex')">
+              </div>
+            </div>
+            <div class="fld" style="margin-bottom:0">
+              <label class="fld-label">Text / Lines Color</label>
+              <div class="color-row">
+                <div class="color-swatch"><input type="color" id="ph-fg" value="#888888"
+                    oninput="syncHex('ph-fg','ph-fg-hex');renderPH()"></div>
+                <input type="text" class="fld-input" id="ph-fg-hex" value="#888888"
+                  oninput="syncPicker('ph-fg','ph-fg-hex')">
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="sec-label"><span class="sec-dot"></span> Text & Font</div>
+            <div class="fld">
+              <label class="fld-label">Overlay Text</label>
+              <input type="text" class="fld-input" id="ph-text" value="Reacthemes" oninput="renderPH()">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 80px;gap:10px;">
+              <div class="fld">
+                <label class="fld-label">Google Font</label>
+                <select class="fld-input" id="ph-font" onchange="loadGFont()">
+                  <option value="Syne">Syne</option>
+                  <option value="Roboto">Roboto</option>
+                  <option value="Open Sans">Open Sans</option>
+                  <option value="Lato">Lato</option>
+                  <option value="Montserrat">Montserrat</option>
+                  <option value="Raleway">Raleway</option>
+                  <option value="Playfair Display">Playfair Display</option>
+                  <option value="Oswald">Oswald</option>
+                  <option value="Nunito">Nunito</option>
+                  <option value="Poppins">Poppins</option>
+                  <option value="Inter">Inter</option>
+                  <option value="Quicksand">Quicksand</option>
+                  <option value="Bebas Neue">Bebas Neue</option>
+                  <option value="DM Mono">DM Mono</option>
+                  <option value="Space Mono">Space Mono</option>
+                  <option value="Josefin Sans">Josefin Sans</option>
+                  <option value="Righteous">Righteous</option>
+                  <option value="Pacifico">Pacifico</option>
+                  <option value="Lobster">Lobster</option>
+                  <option value="Dancing Script">Dancing Script</option>
+                  <option value="Abril Fatface">Abril Fatface</option>
+                  <option value="Caveat">Caveat</option>
+                </select>
+              </div>
+              <div class="fld">
+                <label class="fld-label">Size (px)</label>
+                <input type="number" class="fld-input" id="ph-fs" value="32" min="8" oninput="renderPH()">
+              </div>
+            </div>
+            <div class="fld" style="margin-bottom:0">
+              <label class="fld-label">Text Position</label>
+              <div class="aln-row">
+                <button class="aln-btn on" data-align="center" onclick="setAlign(this,'center')">⊕ Center</button>
+                <button class="aln-btn" data-align="top" onclick="setAlign(this,'top')">↑ Top</button>
+                <button class="aln-btn" data-align="bottom" onclick="setAlign(this,'bottom')">↓ Bottom</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="sec-label"><span class="sec-dot"></span> Export</div>
+            <div class="fld">
+              <label class="fld-label">Show Dimensions Label</label>
+              <select class="fld-input" id="ph-dim" onchange="renderPH()">
+                <option value="1">Yes — show W × H</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+            <div class="fld" style="margin-bottom:0">
+              <label class="fld-label">Download Format</label>
+              <select class="fld-input" id="ph-fmt">
+                <option value="png">PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="webp">WEBP</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div>
+          <div class="card" style="position:sticky;top:20px;">
+            <div class="sec-label"><span class="sec-dot"></span> Live Preview</div>
+            <div class="preview-wrap">
+              <canvas id="ph-canvas"></canvas>
+              <div class="dim-badge" id="dim-badge">800 × 600</div>
+            </div>
+            <div class="btn-row" style="margin-top:16px;">
+              <button class="btn btn-a" id="dl-custom-btn" onclick="dlSingle()">↓ Download Placeholder</button>
+              <button class="btn btn-a" id="dl-one-btn" onclick="dlFromUpload(false)" style="display:none">↓ Download (1
+                file)</button>
+              <button class="btn btn-p" id="ph-dl-zip-btn" onclick="dlFromUpload(true)" style="display:none">↓ Download
+                All as ZIP</button>
+            </div>
+            <div class="gen-note" id="gen-note">Generating placeholders… please wait</div>
+            <p class="note" style="margin-top:10px;" id="preview-note">Preview shows your custom size — change W/H above
+              to adjust.</p>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end placeholder panel -->
+  </div><!-- end app -->
+
+  <div id="toast"><span id="t-icon">✓</span> <span id="t-msg">Done!</span></div>
+
+  <script src="js/jszip.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
+</html>
