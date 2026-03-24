@@ -203,11 +203,11 @@ function refreshPhUI(){
   // Render thumbs (max 48)
   const grid=document.getElementById('ph-src-grid');
   grid.innerHTML='';
-  phFiles.slice(0,48).forEach(f=>{
+  phFiles.slice(0,48).forEach((f, i)=>{
     const div=document.createElement('div');div.className='src-thumb';
     const img=document.createElement('img');img.src=URL.createObjectURL(f);
     const ov=document.createElement('div');ov.className='src-ov';
-    ov.textContent=f.name.replace(/^.*[/\\]/,'');
+    ov.innerHTML=`<span>${f.name.replace(/^.*[/\\]/,'')}</span><button class="rm-ph-btn" onclick="removePhFile(${i})" title="Remove">✕</button>`;
     div.appendChild(img);div.appendChild(ov);grid.appendChild(div);
   });
   if(phFiles.length>48){
@@ -219,6 +219,12 @@ function refreshPhUI(){
   }
   // Update preview using first image dimensions
   if(phMode==='upload') renderPH();
+}
+
+function removePhFile(i){
+  phFiles.splice(i, 1);
+  if(!phFiles.length) clearPh();
+  else refreshPhUI();
 }
 
 // ── Presets
