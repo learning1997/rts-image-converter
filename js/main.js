@@ -39,6 +39,7 @@ function toast(msg,icon='✓'){
 // ════════════════════════════
 let convFiles=[];
 let convBlobs={};
+let convResults=[];
 const selFmts=new Set(['webp']);
 
 document.querySelectorAll('.fmt-chip').forEach(c=>{
@@ -70,10 +71,30 @@ function renderConvList(){
   convFiles.forEach((f,i)=>{
     const div=document.createElement('div');
     div.className='file-item';div.id='fi-'+i;
-    div.innerHTML=`<img class="file-thumb" id="fth-${i}" src=""><span class="file-name">${f.name}</span><span class="file-size">${(f.size/1024).toFixed(0)} KB</span><span class="file-status st-q" id="fst-${i}">Queued</span><button class="rm-btn" onclick="removeConvFile(${i})" title="Remove">✕</button>`;
+    
+    const convertedForThisFile = convResults.filter(r => r.fileIndex === i);
+    
+    let downloadsHtml = '';
+    if (convertedForThisFile.length > 0) {
+      downloadsHtml = '<div class="download-group">';
+      convertedForThisFile.forEach((result, idx) => {
+        downloadsHtml += `<button class="dl-indv-btn" onclick="downloadSingle(${result.fileIndex}, '${result.fmt}', '${result.filename}')" title="Download ${result.filename}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> ${result.fmt.toUpperCase()}</button>`;
+      });
+      downloadsHtml += '</div>';
+    }
+    
+    div.innerHTML=`<img class="file-thumb" id="fth-${i}" src=""><span class="file-name">${f.name}</span><span class="file-size">${(f.size/1024).toFixed(0)} KB</span><span class="file-status st-q" id="fst-${i}">Queued</span>${downloadsHtml}<button class="rm-btn" onclick="removeConvFile(${i})" title="Remove">✕</button>`;
     list.appendChild(div);
     document.getElementById('fth-'+i).src=URL.createObjectURL(f);
   });
+}
+
+function downloadSingle(fileIndex, fmt, filename) {
+  const result = convResults.find(r => r.fileIndex === fileIndex && r.fmt === fmt && r.filename === filename);
+  if (result && result.blob) {
+    dlBlob(result.blob, filename);
+    toast(`Downloaded ${filename}`, '↓');
+  }
 }
 
 function removeConvFile(i){
@@ -93,6 +114,7 @@ async function startConvert(){
   pw.style.display='block';pf.style.width='0%';
   document.querySelectorAll('.rm-btn').forEach(b=>b.style.display='none');
   convBlobs={};
+  convResults=[];
   let done=0;const total=convFiles.length*selFmts.size;
   for(let i=0;i<convFiles.length;i++){
     const file=convFiles[i];
@@ -110,13 +132,22 @@ async function startConvert(){
       const q=['png','gif','ico'].includes(fmt)?1:quality;
       const blob=await canvasBlob(canvas,mime,q);
       const base=file.name.replace(/\.[^/.]+$/,'');
-      convBlobs[`${base}.${fmt}`]=blob;
+      const filename=`${base}.${fmt}`;
+      convBlobs[filename]=blob;
+      convResults.push({
+        fileIndex: i,
+        fmt: fmt,
+        filename: filename,
+        blob: blob
+      });
       done++;pf.style.width=(done/total*100)+'%';
     }
     stEl.textContent='✓ Done';stEl.className='file-status st-done';
   }
   btn.disabled=false;btn.textContent='⚡ Convert All';
   document.getElementById('conv-dl-zip-btn').style.display='';
+  document.querySelectorAll('.rm-btn').forEach(b=>b.style.display='');
+  renderConvList();
   toast(`Converted ${total} file(s)!`,'✓');
 }
 
@@ -129,7 +160,7 @@ async function downloadAll(){
 }
 
 function clearConv(){
-  convFiles=[];convBlobs={};
+  convFiles=[];convBlobs={};convResults=[];
   document.getElementById('conv-list').innerHTML='';
   document.getElementById('conv-btn').disabled=true;
   document.getElementById('conv-dl-zip-btn').style.display='none';
@@ -218,6 +249,7 @@ function clearPh(){
 function refreshPhUI(){
   document.getElementById('ph-badge').style.display='inline-flex';
   document.getElementById('ph-cnt').textContent=`${phFiles.length} image${phFiles.length>1?'s':''} loaded`;
+  
   updateUploadButtons();
   // Render thumbs (max 48)
   const grid=document.getElementById('ph-src-grid');
@@ -431,7 +463,8 @@ function rRect(ctx,x,y,w,h,r){
 // ── Download: custom mode (canvas as-is)
 function dlSingle(){
   const canvas=document.getElementById('ph-canvas');
-  const fmt=document.getElementById('ph-fmt').value;
+  let fmt=document.getElementById('ph-fmt').value;
+  if(fmt==='original') fmt='png'; // Default for custom mode
   const mime=mimeFor(fmt);
   canvas.toBlob(blob=>{
     const w=canvas.width, h=canvas.height;
@@ -443,8 +476,7 @@ function dlSingle(){
 // ── Download: upload mode — single file or all as ZIP
 async function dlFromUpload(asZip){
   if(!phFiles.length){toast('No images loaded!','⚠');return;}
-  const fmt=document.getElementById('ph-fmt').value;
-  const mime=mimeFor(fmt);
+  const selectedFmt=document.getElementById('ph-fmt').value;
   const s=getSettings();
   const note=document.getElementById('gen-note');
 
@@ -457,6 +489,18 @@ async function dlFromUpload(asZip){
 
   for(const f of filesToProcess){
     note.textContent=`Generating… ${done+1} / ${filesToProcess.length}`;
+    
+    // Determine format for this file
+    let fmt = selectedFmt;
+    if (fmt === 'original') {
+      const name = f.name.toLowerCase();
+      if (name.endsWith('.png')) fmt = 'png';
+      else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) fmt = 'jpeg';
+      else if (name.endsWith('.webp')) fmt = 'webp';
+      else fmt = 'png'; // Fallback for svg, gif, etc.
+    }
+    const mime = mimeFor(fmt);
+
     let w=800,h=600;
     try{
       const img=await loadImg(f);
